@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/amiraminbeidokhti/benchmarkDB/data"
+
 	_ "github.com/lib/pq"
 )
 
@@ -20,9 +22,12 @@ var (
 	user  = os.Getenv("POSTGRES_USER")
 	pass  = os.Getenv("POSTGRES_PASSWORD")
 	dbase = os.Getenv("POSTGRES_DBNAME")
+
+	numOfData, _    = strconv.Atoi(os.Getenv("NUM_OF_DATA"))
+	lengthOfData, _ = strconv.Atoi(os.Getenv("LENGTH_OF_DATA"))
 )
 
-func (db *PostgreSQLDb) CreatePostgreSQLCon() {
+func (db *PostgreSQLDb) CreateConn() {
 	port, err := strconv.Atoi(port)
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -43,16 +48,13 @@ func (db *PostgreSQLDb) CreatePostgreSQLCon() {
 }
 
 func (db *PostgreSQLDb) Insert() {
-	for i := 0; i < 1000; i++ {
-		stmtIns, err := db.db.Prepare("INSERT INTO test VALUES (DEFAULT, $1, $2, $3);")
-		defer stmtIns.Close()
+	for i := 0; i < numOfData; i++ {
+		s := data.RandString(lengthOfData)
+		results, err := db.db.Query(fmt.Sprintf(`INSERT INTO test VALUES (DEFAULT, '%v');`, s))
 		if err != nil {
-			panic(err)
+			panic(err.Error())
 		}
-		_, err = stmtIns.Exec(i, i, i)
-		if err != nil {
-			panic(err)
-		}
+		results.Close()
 	}
 }
 
@@ -73,7 +75,8 @@ func (db *PostgreSQLDb) Delete() {
 }
 
 func createTable(db *PostgreSQLDb) {
-	result, err := db.db.Query("CREATE TABLE IF NOT EXISTS test (id serial primary key, f1 int, f2 int, f3 int);")
+	q := fmt.Sprintf("CREATE TABLE IF NOT EXISTS test (id serial primary key, f1 varchar(%v));", lengthOfData)
+	result, err := db.db.Query(q)
 	if err != nil {
 		panic(err.Error())
 	}

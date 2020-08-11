@@ -3,6 +3,9 @@ package redis
 import (
 	"fmt"
 	"os"
+	"strconv"
+
+	"github.com/amiraminbeidokhti/benchmarkDB/data"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -14,9 +17,12 @@ type RedisDB struct {
 var (
 	host = os.Getenv("REDIS_HOST")
 	port = os.Getenv("REDIS_PORT")
+
+	numOfData, _    = strconv.Atoi(os.Getenv("NUM_OF_DATA"))
+	lengthOfData, _ = strconv.Atoi(os.Getenv("LENGTH_OF_DATA"))
 )
 
-func (db *RedisDB) CreateRedisPool() {
+func (db *RedisDB) CreateConn() {
 
 	temp := &redis.Pool{
 		MaxIdle:   80,
@@ -36,8 +42,9 @@ func (db *RedisDB) CreateRedisPool() {
 func (db *RedisDB) Insert() {
 	conn := db.Pool.Get()
 	defer conn.Close()
-	for i := 0; i < 1000; i++ {
-		_, err := conn.Do("HSET", "test", "id", i, "f1", i, "f2", i, "f3", i)
+	for i := 0; i < numOfData; i++ {
+		s := data.RandString(lengthOfData)
+		_, err := conn.Do("HSET", "test", i, s)
 		if err != nil {
 			fmt.Errorf(err.Error())
 		}

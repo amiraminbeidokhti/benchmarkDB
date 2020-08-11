@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 
+	"github.com/amiraminbeidokhti/benchmarkDB/data"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -18,9 +20,12 @@ var (
 	host  = os.Getenv("MYSQL_HOST")
 	port  = os.Getenv("MYSQL_PORT")
 	dbase = os.Getenv("MYSQL_DBNAME")
+
+	numOfData, _    = strconv.Atoi(os.Getenv("NUM_OF_DATA"))
+	lengthOfData, _ = strconv.Atoi(os.Getenv("LENGTH_OF_DATA"))
 )
 
-func (db *MySQLDb) CreateMySQLCon() {
+func (db *MySQLDb) CreateConn() {
 	s := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, pass, host, port, dbase)
 	ms, err := sql.Open("mysql", s)
 	if err != nil {
@@ -37,16 +42,13 @@ func (db *MySQLDb) CreateMySQLCon() {
 }
 
 func (db *MySQLDb) Insert() {
-	for i := 0; i < 1000; i++ {
-		stmtIns, err := db.db.Prepare("INSERT INTO test VALUES (null, ?, ?, ?);")
-		defer stmtIns.Close()
+	for i := 0; i < numOfData; i++ {
+		s := data.RandString(lengthOfData)
+		results, err := db.db.Query(fmt.Sprintf(`INSERT INTO test VALUES (null, "%v");`, s))
 		if err != nil {
-			panic(err)
+			panic(err.Error())
 		}
-		_, err = stmtIns.Exec(i, i, i)
-		if err != nil {
-			panic(err)
-		}
+		results.Close()
 	}
 }
 
@@ -61,13 +63,14 @@ func (db *MySQLDb) Select() {
 func (db *MySQLDb) Delete() {
 	del, err := db.db.Query("DELETE FROM test;")
 	if err != nil {
-		fmt.Errorf(err.Error())
+		panic(err.Error())
 	}
 	del.Close()
 }
 
 func createTable(db *MySQLDb) {
-	result, err := db.db.Query("CREATE TABLE IF NOT EXISTS test (id int(6) primary key auto_increment, f1 int(6), f2 int(6), f3 int(6));")
+	q := fmt.Sprintf("CREATE TABLE IF NOT EXISTS test (id int(10) primary key auto_increment, f1 varchar(%v));", lengthOfData)
+	result, err := db.db.Query(q)
 	if err != nil {
 		panic(err.Error())
 	}

@@ -3,41 +3,48 @@ package myStorage
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
+
+	"github.com/amiraminbeidokhti/benchmarkDB/data"
 
 	"github.com/amiraminbeidokhti/benchmarkDB/redis"
 	redigo "github.com/gomodule/redigo/redis"
 )
 
 type MyStorage struct {
-	db map[int][]int
+	// THIS IS LIKE TEST TABLE
+	db map[int]string
 }
 
 var (
 	host = os.Getenv("REDIS_HOST_MYSTORAGE")
 	port = os.Getenv("REDIS_PORT_MYSTORAGE")
 
+	numOfData, _    = strconv.Atoi(os.Getenv("NUM_OF_DATA"))
+	lengthOfData, _ = strconv.Atoi(os.Getenv("LENGTH_OF_DATA"))
+
 	replica redis.RedisDB
 	mu      sync.Mutex
 )
 
-func (db *MyStorage) CreateDB() {
-	db.db = make(map[int][]int)
+func (db *MyStorage) CreateConn() {
+	db.db = make(map[int]string)
 	replica.Pool = createReplicaPool()
 }
 
 func (db *MyStorage) Insert() {
-	for i := 0; i < 1000; i++ {
-		prepare := []int{i, i, i}
+	for i := 0; i < numOfData; i++ {
+		prepare := data.RandString(lengthOfData)
 		db.db[i] = prepare
-		go insertReplica(&replica, i, i, i, i)
+		go insertReplica(&replica, i, prepare)
 	}
 }
 
 func (db *MyStorage) Select() {
 	temp := 0
-	for range db.db {
-		temp++
+	for k, _ := range db.db {
+		temp += k
 	}
 }
 
@@ -67,7 +74,7 @@ func insertReplica(db *redis.RedisDB, param ...interface{}) {
 	mu.Lock()
 	conn := db.Pool.Get()
 	defer conn.Close()
-	_, err := conn.Do("HSET", "test", "id", param[0], "f1", param[1], "f2", param[2], "f3", param[3])
+	_, err := conn.Do("HSET", "test", param[0], param[1])
 	if err != nil {
 		fmt.Errorf(err.Error())
 	}
