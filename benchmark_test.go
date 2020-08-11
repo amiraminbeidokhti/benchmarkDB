@@ -5,6 +5,7 @@ import (
 
 	"github.com/amiraminbeidokhti/benchmarkDB/mySQL"
 	"github.com/amiraminbeidokhti/benchmarkDB/myStorage"
+	"github.com/amiraminbeidokhti/benchmarkDB/postgreSQL"
 	"github.com/amiraminbeidokhti/benchmarkDB/redis"
 )
 
@@ -41,38 +42,38 @@ func BenchmarkDeleteMySQL(b *testing.B) {
 	}
 }
 
-// // POSTGRESQL BENCHMARK
-// var postgresDb = postgreSQL.PostgreSQLDb{}
+// POSTGRESQL BENCHMARK
+var postgresDb = postgreSQL.PostgreSQLDb{}
 
-// func preparePostgresDb() {
-// 	postgresDb.CreatePostgreSQLCon()
-// 	deleteDB(&postgresDb)
-// 	insertDB(&postgresDb)
-// }
+func preparePostgresDb() {
+	postgresDb.CreatePostgreSQLCon()
+	deleteDB(&postgresDb)
+	insertDB(&postgresDb)
+}
 
-// func BenchmarkInsertPostgres(b *testing.B) {
-// 	preparePostgresDb()
-// 	b.ResetTimer()
-// 	for i := 0; i < b.N; i++ {
-// 		insertDB(&postgresDb)
-// 	}
-// }
+func BenchmarkInsertPostgres(b *testing.B) {
+	preparePostgresDb()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		insertDB(&postgresDb)
+	}
+}
 
-// func BenchmarkSelectPostgres(b *testing.B) {
-// 	preparePostgresDb()
-// 	b.ResetTimer()
-// 	for i := 0; i < b.N; i++ {
-// 		selectDB(&postgresDb)
-// 	}
-// }
+func BenchmarkSelectPostgres(b *testing.B) {
+	preparePostgresDb()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		selectDB(&postgresDb)
+	}
+}
 
-// func BenchmarkDeletePostgres(b *testing.B) {
-// 	preparePostgresDb()
-// 	b.ResetTimer()
-// 	for i := 0; i < b.N; i++ {
-// 		deleteDB(&postgresDb)
-// 	}
-// }
+func BenchmarkDeletePostgres(b *testing.B) {
+	preparePostgresDb()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		deleteDB(&postgresDb)
+	}
+}
 
 // REDIS
 var redisDB = redis.RedisDB{}

@@ -11,7 +11,6 @@ ENV MYSQL_USER=root \
     POSTGRES_HOST=postgreSqlServer \
     POSTGRES_PORT=5432 \
     POSTGRES_DBNAME=test \
-    POSTGRES_HOSTREPLICA=postgreSqlServerReplica \
     # Redis
     REDIS_HOST=redisServer \
     REDIS_PORT=6379 \
