@@ -17,7 +17,7 @@ $ docker network create -d bridge my-net
 ```
 
 ### 3. Setup databases:
-#### I)MySQL
+#### I) MySQL
 
 Run mySQL server:
 ```bash
@@ -49,6 +49,7 @@ $ exit
 #### II) PostgreSQL
 
 Run postgreSQL server:
+If you want synchronous replication, add -e POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on and -e POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1 to the below command.
 ```bash
 $ docker run -d --network=my-net --name postgreSqlServer -e POSTGRESQL_REPLICATION_MODE=master -e POSTGRESQL_USERNAME=postgres -e POSTGRESQL_PASSWORD=root -e POSTGRESQL_DATABASE=test -e POSTGRESQL_REPLICATION_USER=my_repl_user -e POSTGRESQL_REPLICATION_PASSWORD=my_repl_password bitnami/postgresql
 ```
