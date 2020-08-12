@@ -15,8 +15,10 @@ type RedisDB struct {
 }
 
 var (
-	host = os.Getenv("REDIS_HOST")
-	port = os.Getenv("REDIS_PORT")
+	host            = os.Getenv("REDIS_HOST")
+	port            = os.Getenv("REDIS_PORT")
+	sync            = os.Getenv("REDIS_SYNC")
+	numOfReplica, _ = strconv.Atoi(os.Getenv("NUM_OF_REPLICA"))
 
 	numOfData, _    = strconv.Atoi(os.Getenv("NUM_OF_DATA"))
 	lengthOfData, _ = strconv.Atoi(os.Getenv("LENGTH_OF_DATA"))
@@ -40,14 +42,10 @@ func (db *RedisDB) CreateConn() {
 }
 
 func (db *RedisDB) Insert() {
-	conn := db.Pool.Get()
-	defer conn.Close()
-	for i := 0; i < numOfData; i++ {
-		s := data.RandString(lengthOfData)
-		_, err := conn.Do("HSET", "test", i, s)
-		if err != nil {
-			fmt.Errorf(err.Error())
-		}
+	if sync == "1" {
+		insertSync(db)
+	} else {
+		insertAsync(db)
 	}
 }
 
@@ -61,9 +59,58 @@ func (db *RedisDB) Select() {
 }
 
 func (db *RedisDB) Delete() {
+	if sync == "1" {
+		deleteSync(db)
+	} else {
+		deleteAsync(db)
+	}
+}
+
+func insertAsync(db *RedisDB) {
+	conn := db.Pool.Get()
+	defer conn.Close()
+	for i := 0; i < numOfData; i++ {
+		s := data.RandString(lengthOfData)
+		_, err := conn.Do("HSET", "test", i, s)
+		if err != nil {
+			fmt.Errorf(err.Error())
+		}
+	}
+}
+
+func insertSync(db *RedisDB) {
+	conn := db.Pool.Get()
+	defer conn.Close()
+	for i := 0; i < numOfData; i++ {
+		s := data.RandString(lengthOfData)
+		_, err := conn.Do("HSET", "test", i, s)
+		if err != nil {
+			fmt.Errorf(err.Error())
+		}
+		_, err = conn.Do("wait", numOfReplica, 0)
+		if err != nil {
+			fmt.Errorf(err.Error())
+		}
+	}
+}
+
+func deleteAsync(db *RedisDB) {
 	conn := db.Pool.Get()
 	defer conn.Close()
 	_, err := conn.Do("DEL", "test")
+	if err != nil {
+		fmt.Errorf(err.Error())
+	}
+}
+
+func deleteSync(db *RedisDB) {
+	conn := db.Pool.Get()
+	defer conn.Close()
+	_, err := conn.Do("DEL", "test")
+	if err != nil {
+		fmt.Errorf(err.Error())
+	}
+	_, err = conn.Do("wait", numOfReplica, 0)
 	if err != nil {
 		fmt.Errorf(err.Error())
 	}

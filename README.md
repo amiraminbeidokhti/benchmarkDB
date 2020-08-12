@@ -19,18 +19,48 @@ $ docker network create cluster --subnet=192.168.0.0/16
 
 ### 3. Setup databases:
 #### I) MySQL 
-##### a) Asynchronous
-```diff
-+ FIRST APPROACH:
+
+#### ⋅⋅* Synchronous
+
+If you want add other nodes, you must edit mysql-docker/7.6/cnf/mysql-cluster.cnf and specify how many nodes you want. Then you must edit mysql-docker/7.6/cnf/my.cnf and modify the ndb-connectstring to match the ndb_mgmd node.
+Build the image:
+```bash
+$ docker build -t mysql-cluster mySQL/mysql-docker/7.5
 ```
+Creating the manager node:
+```bash
+$ docker run -d --net=cluster --name=management1 --ip=192.168.0.2 mysql-cluster ndb_mgmd
+```
+Creating the data nodes:
+```bash
+$ docker run -d --net=cluster --name=ndb1 --ip=192.168.0.3 mysql-cluster ndbd
+$ docker run -d --net=cluster --name=ndb2 --ip=192.168.0.4 mysql-cluster ndbd
+```
+Creating the mySQL nodes:
+```bash
+$ docker run -d --net=cluster --name=mysql1 -e MYSQL_DATABASE=test --ip=192.168.0.10 -e MYSQL_ROOT_PASSWORD=root mysql-cluster mysqld
+$ docker run -d --net=cluster --name=mysql2 -e MYSQL_DATABASE=test --ip=192.168.0.9 -e MYSQL_ROOT_PASSWORD=root mysql-cluster mysqld
+```
+Giving the proper privilage to root user:
+```bash
+$ docker exec -it mysql1 mysql -uroot -proot
+$ GRANT ALL ON *.* to root@'%' IDENTIFIED BY 'root';
+$ FLUSH PRIVILEGES;
+$ exit
+```
+#### ⋅⋅* Asynchronous
+
+> **_NOTE:_** In order to make replication asynchronously, you have to config Dockerfile too.
+
+_FIRST APPROACH_**
 ```bash
 $ docker run --name mySqlServer --network=my-net -d -e MYSQL_ROOT_PASSWORD=root -e MYSQL_REPLICATION_MODE=master -e MYSQL_REPLICATION_USER=my_repl_user -e MYSQL_REPLICATION_PASSWORD=my_repl_password -e MYSQL_USER=my_user -e MYSQL_DATABASE=test -e ALLOW_EMPTY_PASSWORD=yes bitnami/mysql
 $ docker run --name mySqlSlave -d --network=my-net -e MYSQL_REPLICATION_MODE=slave -e MYSQL_REPLICATION_USER=my_repl_user -e MYSQL_REPLICATION_PASSWORD=my_repl_password -e MYSQL_MASTER_HOST=mySqlServer bitnami/mysql
 ```
 
-```diff
-+ SECOND APPROACH:
-```
+
+_SECOND APPROACH_**
+
 Run mySQL server:
 ```bash
 $ docker run --network=my-net --name mySqlServer -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=test -dit -v $(pwd)/mySQL/asynchronous/server1/conf.d:/etc/mysql/conf.d/ -v $(pwd)/mySQL/asynchronous/server1/backup:/backup -h mysql1 mysql:5.7.31 
@@ -58,41 +88,14 @@ $ start slave;
 $ exit
 ```
 
-##### b) Synchronous
-
-If you want add other nodes, you must edit mysql-docker/7.6/cnf/mysql-cluster.cnf and specify how many nodes you want. Then you must edit mysql-docker/7.6/cnf/my.cnf and modify the ndb-connectstring to match the ndb_mgmd node.
-Build the image:
-```bash
-docker build -t mysql-cluster mySQL/mysql-docker/7.5
-```
-Creating the manager node:
-```bash
-docker run -d --net=cluster --name=management1 --ip=192.168.0.2 mysql-cluster ndb_mgmd
-```
-Creating the data nodes:
-```bash
-docker run -d --net=cluster --name=ndb1 --ip=192.168.0.3 mysql-cluster ndbd
-docker run -d --net=cluster --name=ndb2 --ip=192.168.0.4 mysql-cluster ndbd
-```
-Creating the mySQL nodes:
-```bash
-docker run -d --net=cluster --name=mysql1 -e MYSQL_DATABASE=test --ip=192.168.0.10 -e MYSQL_ROOT_PASSWORD=root mysql-cluster mysqld
-docker run -d --net=cluster --name=mysql2 -e MYSQL_DATABASE=test --ip=192.168.0.9 -e MYSQL_ROOT_PASSWORD=root mysql-cluster mysqld
-```
-Giving the proper privilage to root user:
-```bash
-docker exec -it mysql1 mysql -uroot -proot
-GRANT ALL ON *.* to root@'%' IDENTIFIED BY 'root';
-FLUSH PRIVILEGES;
-exit
-```
-
 #### II) PostgreSQL
 
 Run postgreSQL server:
-In order to make replication asynchronous, delete -e POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on and -e POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1 from the below command.
+
+> **_NOTE:_** In order to make replication asynchronously, delete -e POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on and -e POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1 from the below command.
+
 ```bash
-$ docker run -d --network=my-net --name postgreSqlServer -e POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on -e POSTGRESQL_REPLICATION_MODE=master -e POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1 -e POSTGRESQL_USERNAME=postgres -e POSTGRESQL_PASSWORD=root -e POSTGRESQL_DATABASE=test -e POSTGRESQL_REPLICATION_USER=my_repl_user -e POSTGRESQL_REPLICATION_PASSWORD=my_repl_password bitnami/postgresql
+$ docker run -d --network=my-net --name postgreSqlServer -e POSTGRESQL_REPLICATION_MODE=master -e POSTGRESQL_USERNAME=postgres -e POSTGRESQL_PASSWORD=root -e POSTGRESQL_DATABASE=test -e POSTGRESQL_REPLICATION_USER=my_repl_user -e POSTGRESQL_REPLICATION_PASSWORD=my_repl_password -e POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on -e POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1 bitnami/postgresql
 ```
 Run postgreSQL slave:
 ```bash
@@ -100,6 +103,8 @@ $ docker run -d --name postgreSqlSlave --network=my-net -e POSTGRESQL_REPLICATIO
 ```
 
 #### III) REDIS
+
+> **_NOTE:_** In order to make replication asynchronously, change REDIS_SYNC to 0 at Dockerfile
 
 Run redis server:
 ```bash
@@ -122,8 +127,8 @@ $ docker run --name redisMyStorageServer --network=my-net -d redis
 Run benchmark:
 ```bash
 $ docker build -t benchmark .
-$ docker create --name benchmarkRun --network=cluster benchmark
-$ docker network connect my-net benchmarkRun
+$ docker create --name benchmarkRun --rm --network=my-net benchmark
+$ docker network connect cluster benchmarkRun
 $ docker start -a benchmarkRun
 ```
 

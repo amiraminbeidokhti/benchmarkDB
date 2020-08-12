@@ -52,7 +52,7 @@ func (db *MyStorage) Delete() {
 	for k, _ := range db.db {
 		delete(db.db, k)
 	}
-	deleteReplica()
+	deleteReplica(&replica)
 }
 
 func createReplicaPool() *redigo.Pool {
@@ -81,8 +81,13 @@ func insertReplica(db *redis.RedisDB, param ...interface{}) {
 	mu.Unlock()
 }
 
-func deleteReplica() {
+func deleteReplica(db *redis.RedisDB) {
 	mu.Lock()
-	replica.Delete()
+	conn := db.Pool.Get()
+	defer conn.Close()
+	_, err := conn.Do("DEL", "test")
+	if err != nil {
+		fmt.Errorf(err.Error())
+	}
 	mu.Unlock()
 }
