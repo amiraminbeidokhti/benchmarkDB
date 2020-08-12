@@ -51,6 +51,7 @@ var mySQLDb = &mySQL.MySQLDb{}
 func BenchmarkInsertMySQL(b *testing.B) {
 	benchmarkInsert(b, mySQLDb)
 }
+
 func BenchmarkSelectMySQL(b *testing.B) {
 	benchmarkSelect(b, mySQLDb)
 }

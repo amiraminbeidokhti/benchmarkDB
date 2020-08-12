@@ -2,7 +2,10 @@ FROM golang
 
 ENV MYSQL_USER=root \
     MYSQL_PASSWORD=root \
-    MYSQL_HOST=mySqlServer \
+    # For async replication comment out below line
+    # MYSQL_HOST=mySqlServer \ 
+    # For sync replication comment out below line
+    MYSQL_HOST=192.168.0.10 \
     MYSQL_PORT=3306 \
     MYSQL_DBNAME=test \
     # PostgreSql

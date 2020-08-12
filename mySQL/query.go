@@ -38,7 +38,11 @@ func (db *MySQLDb) CreateConn() {
 		fmt.Errorf("MySQL db is not connected")
 		fmt.Println(err.Error())
 	}
-	createTable(db)
+	if host == "mySqlServer" {
+		createTable(db)
+	} else {
+		createTableSync(db)
+	}
 }
 
 func (db *MySQLDb) Insert() {
@@ -66,6 +70,15 @@ func (db *MySQLDb) Delete() {
 		panic(err.Error())
 	}
 	del.Close()
+}
+
+func createTableSync(db *MySQLDb) {
+	q := fmt.Sprintf("CREATE TABLE IF NOT EXISTS test (id int(10) primary key auto_increment, f1 varchar(%v)) ENGINE=NDBCLUSTER;", lengthOfData)
+	result, err := db.db.Query(q)
+	if err != nil {
+		panic(err.Error())
+	}
+	result.Close()
 }
 
 func createTable(db *MySQLDb) {
