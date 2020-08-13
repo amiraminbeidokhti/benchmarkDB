@@ -1,6 +1,6 @@
 # Benchmark Databases
 
-In this project we benchmark four different ways of keeping our data.
+In this project we benchmark four different ways of keeping our data for [Gimulator](https://github.com/Gimulator/Gimulator) project.
 
 ## Getting Started
 
@@ -20,7 +20,7 @@ $ docker network create cluster --subnet=192.168.0.0/16
 ### 3. Setup databases:
 #### I) MySQL 
 
-#### ⋅⋅* Synchronous
+#### Synchronous
 
 If you want add other nodes, you must edit mysql-docker/7.6/cnf/mysql-cluster.cnf and specify how many nodes you want. Then you must edit mysql-docker/7.6/cnf/my.cnf and modify the ndb-connectstring to match the ndb_mgmd node.
 Build the image:
@@ -48,18 +48,17 @@ $ GRANT ALL ON *.* to root@'%' IDENTIFIED BY 'root';
 $ FLUSH PRIVILEGES;
 $ exit
 ```
-#### ⋅⋅* Asynchronous
+#### Asynchronous
 
-> **_NOTE:_** In order to make replication asynchronously, you have to config Dockerfile too.
+_FIRST APPROACH_
 
-_FIRST APPROACH_**
+Run mySQL server and slaves, and config them by environment variables:
 ```bash
 $ docker run --name mySqlServer --network=my-net -d -e MYSQL_ROOT_PASSWORD=root -e MYSQL_REPLICATION_MODE=master -e MYSQL_REPLICATION_USER=my_repl_user -e MYSQL_REPLICATION_PASSWORD=my_repl_password -e MYSQL_USER=my_user -e MYSQL_DATABASE=test -e ALLOW_EMPTY_PASSWORD=yes bitnami/mysql
 $ docker run --name mySqlSlave -d --network=my-net -e MYSQL_REPLICATION_MODE=slave -e MYSQL_REPLICATION_USER=my_repl_user -e MYSQL_REPLICATION_PASSWORD=my_repl_password -e MYSQL_MASTER_HOST=mySqlServer bitnami/mysql
 ```
 
-
-_SECOND APPROACH_**
+_SECOND APPROACH_
 
 Run mySQL server:
 ```bash
@@ -92,7 +91,7 @@ $ exit
 
 Run postgreSQL server:
 
-> **_NOTE:_** In order to make replication asynchronously, delete -e POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on and -e POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1 from the below command.
+> **_NOTE:_** In order to make replication asynchronously, delete POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on and POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1 from the below command.
 
 ```bash
 $ docker run -d --network=my-net --name postgreSqlServer -e POSTGRESQL_REPLICATION_MODE=master -e POSTGRESQL_USERNAME=postgres -e POSTGRESQL_PASSWORD=root -e POSTGRESQL_DATABASE=test -e POSTGRESQL_REPLICATION_USER=my_repl_user -e POSTGRESQL_REPLICATION_PASSWORD=my_repl_password -e POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on -e POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1 bitnami/postgresql
@@ -103,8 +102,6 @@ $ docker run -d --name postgreSqlSlave --network=my-net -e POSTGRESQL_REPLICATIO
 ```
 
 #### III) REDIS
-
-> **_NOTE:_** In order to make replication asynchronously, change REDIS_SYNC to 0 at Dockerfile
 
 Run redis server:
 ```bash
@@ -124,10 +121,14 @@ $ docker run --name redisMyStorageServer --network=my-net -d redis
 
 ### 4. Benchmark
 
+> **_NOTE:_** In order to make mySQL replication asynchronously, change MYSQL_HOST=192.168.0.10 value to mySqlServer.
+
+> **_NOTE:_** In order to make Redis replication asynchronously, change REDIS_SYNC=1 value to 0 and delete NUM_OF_REPLICA.
+
 Run benchmark:
 ```bash
 $ docker build -t benchmark .
-$ docker create --name benchmarkRun --rm --network=my-net benchmark
+$ docker create --name benchmarkRun -e NUM_OF_DATA=1000 -e LENGTH_OF_DATA=10000 -e REDIS_SYNC=1 -e NUM_OF_REPLICA=1 -e MYSQL_HOST=192.168.0.10 --rm --network=my-net benchmark
 $ docker network connect cluster benchmarkRun
 $ docker start -a benchmarkRun
 ```
