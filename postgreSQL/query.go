@@ -27,10 +27,10 @@ var (
 	lengthOfData, _ = strconv.Atoi(os.Getenv("LENGTH_OF_DATA"))
 )
 
-func (db *PostgreSQLDb) CreateConn() {
+func (db *PostgreSQLDb) CreateConn() error {
 	port, err := strconv.Atoi(port)
 	if err != nil {
-		fmt.Errorf(err.Error())
+		return err
 	}
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, pass, dbase)
 	ps, err := sql.Open("postgres", psqlInfo)
@@ -41,10 +41,10 @@ func (db *PostgreSQLDb) CreateConn() {
 
 	err = db.db.Ping()
 	if err != nil {
-		fmt.Errorf("PostgreSQL db is not connected")
-		fmt.Println(err.Error())
+		return err
 	}
 	createTable(db)
+	return nil
 }
 
 func (db *PostgreSQLDb) Insert() {

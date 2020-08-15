@@ -1,0 +1,91 @@
+version: '3'
+
+services: 
+    mySqlServer:
+        image: bitnami/mysql
+        logging: 
+            driver: "none"
+        environment: 
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_REPLICATION_MODE=master
+            - MYSQL_REPLICATION_USER=my_repl_user
+            - MYSQL_REPLICATION_PASSWORD=my_repl_password
+            - MYSQL_USER=my_user
+            - MYSQL_DATABASE=test
+            - ALLOW_EMPTY_PASSWORD=yes
+    mySqlSlave:
+        image: bitnami/mysql
+        logging: 
+            driver: "none"
+        environment: 
+            - MYSQL_REPLICATION_MODE=slave
+            - MYSQL_REPLICATION_USER=my_repl_user
+            - MYSQL_REPLICATION_PASSWORD=my_repl_password
+            - MYSQL_MASTER_HOST=mySqlServer
+        depends_on: 
+            - mySqlServer
+    postgreSqlServer:
+        image: bitnami/postgresql
+        logging: 
+            driver: "none"
+        environment: 
+            - POSTGRESQL_REPLICATION_MODE=master
+            - POSTGRESQL_USERNAME=postgres
+            - POSTGRESQL_PASSWORD=root
+            - POSTGRESQL_DATABASE=test
+            - POSTGRESQL_REPLICATION_USER=my_repl_user
+            - POSTGRESQL_REPLICATION_PASSWORD=my_repl_password
+            - POSTGRESQL_SYNCHRONOUS_COMMIT_MODE=on
+            - POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1
+    postgreSqlSlave:
+        image: bitnami/postgresql
+        logging: 
+            driver: "none"
+        environment: 
+            - POSTGRESQL_REPLICATION_MODE=slave
+            - POSTGRESQL_USERNAME=postgres
+            - POSTGRESQL_PASSWORD=root
+            - POSTGRESQL_MASTER_HOST=postgreSqlServer
+            - POSTGRESQL_MASTER_PORT_NUMBER=5432
+            - POSTGRESQL_REPLICATION_USER=my_repl_user
+            - POSTGRESQL_REPLICATION_PASSWORD=my_repl_password
+        depends_on: 
+            - postgreSqlServer
+    redisServer:
+        image: bitnami/redis
+        logging: 
+            driver: "none"
+        environment: 
+            - ALLOW_EMPTY_PASSWORD=yes
+            - REDIS_REPLICATION_MODE=master
+    redisSlave:
+        image: bitnami/redis
+        logging: 
+            driver: "none"
+        environment: 
+            - ALLOW_EMPTY_PASSWORD=yes
+            - REDIS_REPLICATION_MODE=slave
+            - REDIS_MASTER_HOST=redisServer
+            - REDIS_MASTER_PORT_NUMBER=6379
+        depends_on: 
+            - redisServer
+    redisMyStorageServer:
+        image: redis
+        logging: 
+            driver: "none"
+    benchmark:
+        build: .
+        image: benchmark
+        environment: 
+            - NUM_OF_DATA=1000
+            - LENGTH_OF_DATA=10000
+            - MYSQL_HOST=mySqlServer
+        depends_on: 
+            - mySqlServer
+            - mySqlSlave
+            - postgreSqlServer
+            - postgreSqlSlave
+            - redisServer
+            - redisSlave
+            - redisMyStorageServer
+    

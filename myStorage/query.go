@@ -28,9 +28,10 @@ var (
 	mu      sync.Mutex
 )
 
-func (db *MyStorage) CreateConn() {
+func (db *MyStorage) CreateConn() error {
 	db.db = make(map[int]string)
 	replica.Pool = createReplicaPool()
+	return nil
 }
 
 func (db *MyStorage) Insert() {

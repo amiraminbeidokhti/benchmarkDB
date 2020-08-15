@@ -1,7 +1,9 @@
 package BenchmarkDB
 
 import (
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/amiraminbeidokhti/benchmarkDB/mySQL"
 	"github.com/amiraminbeidokhti/benchmarkDB/myStorage"
@@ -10,13 +12,27 @@ import (
 )
 
 type memory interface {
-	CreateConn()
+	CreateConn() error
 	Delete()
 	Insert()
 }
 
+var wg sync.WaitGroup
+
+func connectDbHandle(attempt, noOfattempts int, sec time.Duration, m memory) {
+	for ; attempt <= noOfattempts; attempt++ {
+		if err := m.CreateConn(); err == nil {
+			break
+		}
+		time.Sleep(sec * time.Second)
+	}
+	wg.Done()
+}
+
 func prepareMemory(m memory) {
-	m.CreateConn()
+	wg.Add(1)
+	go connectDbHandle(1, 2, 10, m)
+	wg.Wait()
 	m.Delete()
 	m.Insert()
 }

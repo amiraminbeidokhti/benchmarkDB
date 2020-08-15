@@ -2,23 +2,49 @@
 
 In this project we benchmark four different ways of keeping our data for [Gimulator](https://github.com/Gimulator/Gimulator) project.
 
+## Table of Contents
+
+- [Getting Started](#getting-started)
+- [Docker compose](#docker-compose)
+- [Docker Cli](#docker-cli)
+  - [Networks](#create-proper-networks)
+  - [Database](#setup-databases)
+    - [MySQL](#1.-mysql)
+        - [Synchronous](#synchronous)
+        - [Asynchronous](#asynchronous)
+    - [PostgreSQL](2.-postgresql)
+    - [Redis](#3.-reids)
+    - [MYSTORAGE](#4.-mystorage)
+  - [Benchmark](#benchmark)
+- [Description](#description)
+- [Contributing](#contributing)
+
 ## Getting Started
 
-### 1. Get the project using this command:
+### Get the project using this command:
 
 ```
 $ git clone https://github.com/amiraminbeidokhti/benchmarkDB.git
 ```
 
-### 2. Create proper networks:
+## Docker Compose
+
+You can run the project in an **asynchronous** way with this easy command:
+```bash
+$ docker-compose up
+```
+
+## Docker Cli
+
+### Create proper networks:
 
 ```bash
 $ docker network create -d bridge my-net
 $ docker network create cluster --subnet=192.168.0.0/16
 ```
 
-### 3. Setup databases:
-#### I) MySQL 
+### Setup databases:
+#### 1. MySQL 
 
 #### Synchronous
 
@@ -87,7 +113,7 @@ $ start slave;
 $ exit
 ```
 
-#### II) PostgreSQL
+#### 2. PostgreSQL
 
 Run postgreSQL server:
 
@@ -101,7 +127,7 @@ Run postgreSQL slave:
 $ docker run -d --name postgreSqlSlave --network=my-net -e POSTGRESQL_REPLICATION_MODE=slave -e POSTGRESQL_USERNAME=postgres -e POSTGRESQL_PASSWORD=root -e POSTGRESQL_MASTER_HOST=postgreSqlServer -e POSTGRESQL_MASTER_PORT_NUMBER=5432 -e POSTGRESQL_REPLICATION_USER=my_repl_user -e POSTGRESQL_REPLICATION_PASSWORD=my_repl_password bitnami/postgresql
 ```
 
-#### III) REDIS
+#### 3. REDIS
 
 Run redis server:
 ```bash
@@ -112,14 +138,14 @@ Run redis slave:
 $ docker run --name redisSlave -e ALLOW_EMPTY_PASSWORD=yes --network=my-net -e REDIS_REPLICATION_MODE=slave  -d -e REDIS_MASTER_HOST=redisServer -e REDIS_MASTER_PORT_NUMBER=6379 bitnami/redis
 ```
 
-#### IV) MYSTORAGE
+#### 4. MYSTORAGE
 
 Run redis slave:
 ```bash
 $ docker run --name redisMyStorageServer --network=my-net -d redis
 ```
 
-### 4. Benchmark
+### Benchmark
 
 > **_NOTE:_** In order to make mySQL replication asynchronously, change MYSQL_HOST=192.168.0.10 value to mySqlServer.
 

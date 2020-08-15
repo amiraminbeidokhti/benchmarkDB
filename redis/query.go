@@ -24,7 +24,7 @@ var (
 	lengthOfData, _ = strconv.Atoi(os.Getenv("LENGTH_OF_DATA"))
 )
 
-func (db *RedisDB) CreateConn() {
+func (db *RedisDB) CreateConn() error {
 
 	temp := &redis.Pool{
 		MaxIdle:   80,
@@ -39,6 +39,7 @@ func (db *RedisDB) CreateConn() {
 		},
 	}
 	db.Pool = temp
+	return nil
 }
 
 func (db *RedisDB) Insert() {

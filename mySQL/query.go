@@ -25,24 +25,24 @@ var (
 	lengthOfData, _ = strconv.Atoi(os.Getenv("LENGTH_OF_DATA"))
 )
 
-func (db *MySQLDb) CreateConn() {
+func (db *MySQLDb) CreateConn() error {
 	s := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, pass, host, port, dbase)
 	ms, err := sql.Open("mysql", s)
 	if err != nil {
-		fmt.Errorf(err.Error())
+		return err
 	}
 	db.db = ms
 	// make sure connection is available
 	err = db.db.Ping()
 	if err != nil {
-		fmt.Errorf("MySQL db is not connected")
-		fmt.Println(err.Error())
+		return err
 	}
 	if host == "mySqlServer" {
 		createTable(db)
 	} else {
 		createTableSync(db)
 	}
+	return nil
 }
 
 func (db *MySQLDb) Insert() {
